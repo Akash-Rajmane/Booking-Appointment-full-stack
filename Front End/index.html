@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <style>
+        .form-container{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #form{
+            display: flex;
+            flex-direction: column;
+            width: 400px;
+            height: 300px;
+            border: 1px solid orange;
+            padding: 20px;
+            border-radius: 6px;
+        }
+
+        #btn{
+            margin-top: 5px;
+            display: block;
+            height: 30px;
+            background-color: orange;
+            border: none;
+            border-radius: 6px;
+        }
+
+        .delete{
+            margin-left: 10px;
+        }
+
+        .edit{
+            margin-left: 10px;
+        }
+
+        .list-container{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        #items{
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+            justify-content: center;
+        }
+    </style>
+    <section class="form-container">
+        <form id="form">
+            <label for="name">Name</label><br>
+            <input type="text" id="name" name="name" value=""><br>
+            <label for="email">Email</label><br>
+            <input type="email" id="email" name="email" value=""><br>
+            <label for="phone">Phone Number</label><br>
+            <input type="text" id="phone" name="phone" value=""><br> <!-- Changed type to text -->
+            <input type="submit" value="Submit" id="btn">
+        </form>
+    </section>
+    <section class="list-container">
+        <ul id="items">
+    
+        </ul>
+    </section>
+   
+    <script>
+        let btn = document.getElementById("btn");
+        let nameInput = document.getElementById("name");
+        let emailInput = document.getElementById("email");
+        let phoneInput = document.getElementById("phone");
+        let form = document.getElementById("form");
+        let ul = document.getElementById("items");
+
+        function fetchData(url, options) {
+            return fetch(url, options)
+                    .then(response => response.json())
+                    .catch(error => console.error('Error:', error));
+        }
+
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (nameInput.value === "" || emailInput.value === "" || phoneInput.value === "") {
+                alert("Please enter all the fields");
+            } else {
+                let user = {
+                    "name": nameInput.value,
+                    "email": emailInput.value,
+                    "phone": phoneInput.value
+                };
+
+                fetch('http://localhost:3000/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(user),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                    populateList();
+                    nameInput.value = "";
+                    emailInput.value = "";
+                    phoneInput.value = "";
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+
+        function showUsers(arr){
+            arr.forEach((el) => {
+                const li = document.createElement('li');
+                const span = document.createElement('span');
+                span.textContent = `${el.email}-${el.name}-${el.phone}`;
+               
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'X';
+                deleteButton.className = 'delete';
+                deleteButton.addEventListener('click', () => deleteAppointment(el.id));
+               
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.className = 'edit';
+                editButton.addEventListener('click', () => editAppointment(el.id));
+                
+                li.appendChild(span);
+                li.appendChild(deleteButton);
+                li.appendChild(editButton);
+                ul.appendChild(li);
+            });
+        }
+
+        function populateList() {
+            ul.innerHTML = ''; // Clear the existing list
+
+            fetchData('http://localhost:3000/users', { method: 'GET' })
+            .then(data => showUsers(data));
+        }
+
+        // Populate the list when the page loads
+        window.addEventListener("DOMContentLoaded",populateList);
+
+        function editAppointment(id){
+            fetchData(`http://localhost:3000/users/${id}`, { method: 'GET' })
+            .then(data => {
+                nameInput.value = data.name;
+                emailInput.value = data.email;
+                phoneInput.value = data.phone;
+                deleteAppointment(id);
+            });
+        }
+
+        function deleteAppointment(id){
+            fetch(`http://localhost:3000/users/${id}`, {
+                method: 'DELETE',
+            })
+            .then(() => {
+                console.log('User deleted successfully');
+                populateList();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
